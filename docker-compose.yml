@@ -1,0 +1,53 @@
+services:
+  userservice:
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+    ports:
+      - "5001:80"
+    environment:
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+
+  orderservice:
+    build:
+      context: .
+      dockerfile: OrderService/Dockerfile
+    ports:
+      - "5002:80"
+    environment:
+      - UserService__BaseUrl=http://userservice
+      - ASPNETCORE_URLS=http://+:80
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=orderservice_db;Port=5432;Database=orderdb;Username=user;Password=password
+    depends_on:
+      - userservice
+      - orderservice_db
+  
+  orderservice_db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: orderdb
+    volumes:
+      - pgdata_orderservice:/var/lib/postgresql/data
+    ports:
+      - "5434:5432" # opcional
+  
+  userservice_db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: userdb
+    volumes:
+      - pgdata_userservice:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # opcional, útil para conectarte desde afuera
+
+volumes:
+  pgdata_userservice:
+  pgdata_orderservice:
